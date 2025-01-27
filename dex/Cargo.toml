@@ -16,10 +16,10 @@ default = ["program"]
 no-entrypoint = []
 
 [dependencies]
-anchor-lang = "=0.29.0"
-solana-program = "1.10.41"
+anchor-lang = { git = "https://github.com/akgod/anchor.git" }
+solana-program = "2.1.11"
 solana-security-txt = "1.0.2"
-spl-token = { version = "3.5.0", features = ["no-entrypoint"] }
+spl-token = { version = "7.0.0", features = ["no-entrypoint"] }
 serde = "1.0.150"
 itertools = "0.10.5"
 without-alloc = "0.2.2"
