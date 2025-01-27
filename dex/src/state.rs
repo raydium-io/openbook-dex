@@ -737,7 +737,9 @@ impl MarketState {
     }
 
     fn pubkey(&self) -> Pubkey {
-        Pubkey::new(cast_slice(&identity(self.own_address) as &[_]))
+        //Pubkey::new(cast_slice(&identity(self.own_address) as &[_]))
+        Pubkey::new_from_array(cast_slice(&identity(self.own_address) as &[_]).try_into().expect("slice length must be 32"))
+
     }
 }
 
@@ -3243,9 +3245,20 @@ impl State {
                         );
                     }
 
-                    let open_orders_pk = Pubkey::new(cast_slice(&identity(owner) as &[_]));
-                    let open_orders_owner_pk =
-                        Pubkey::new(cast_slice(&identity(open_orders.owner) as &[_]));
+                   // let open_orders_pk = Pubkey::new(cast_slice(&identity(owner) as &[_]));
+                    let open_orders_pk = Pubkey::new_from_array(
+                        cast_slice(&identity(owner) as &[_])
+                            .try_into()
+                            .expect("Slice length must be exactly 32 bytes"),
+                    );
+                    // let open_orders_owner_pk =
+                    //     Pubkey::new(cast_slice(&identity(open_orders.owner) as &[_]));
+                    
+                    let open_orders_owner_pk =Pubkey::new_from_array(
+                        cast_slice(&identity(open_orders.owner) as &[_])
+                            .try_into()
+                            .expect("Slice length must be exactly 32 bytes"),
+                    );
                     emit!(FillEventLog {
                         market: market.pubkey(),
                         bid: match side {
