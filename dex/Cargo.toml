@@ -16,7 +16,7 @@ default = ["program"]
 no-entrypoint = []
 
 [dependencies]
-anchor-lang = "0.30.1"
+anchor-lang = { git = "https://github.com/akgod/anchor.git" }
 solana-program = "1.10.41"
 solana-security-txt = "1.0.2"
 spl-token = { version = "3.5.0", features = ["no-entrypoint"] }
