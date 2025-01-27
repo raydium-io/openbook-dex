@@ -39,6 +39,7 @@ use crate::{
 };
 
 use anchor_lang::prelude::{borsh, emit, event, AnchorDeserialize, AnchorSerialize};
+use anchor_lang::Discriminator;
 
 declare_check_assert_macros!(SourceFileId::State);
 
