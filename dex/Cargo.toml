@@ -17,7 +17,7 @@ no-entrypoint = []
 
 [dependencies]
 anchor-lang = "=0.29.0"
-solana-program = "1.10.41"
+solana-program = "1.18.26"
 solana-security-txt = "1.0.2"
 spl-token = { version = "3.5.0", features = ["no-entrypoint"] }
 serde = "1.0.150"
