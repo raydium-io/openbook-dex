@@ -1,4 +1,6 @@
 #![cfg_attr(not(feature = "program"), allow(unused))]
+#![allow(dead_code, unused_variables, unused_imports, unused_mut)]
+
 use num_enum::TryFromPrimitive;
 use std::{
     cell::{Ref, RefMut},
