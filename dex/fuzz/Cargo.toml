@@ -11,7 +11,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.3.5"
 arbitrary = "0.4.7"
-solana-program = "=2.1.0"
+solana-program = "^2.1.0"
 spl-token = { version = "=7.0.0", features = ["no-entrypoint"], default-features = false }
 bumpalo = { version = "3.11.1", features = ["collections", "boxed"] }
 safe-transmute = "0.11.2"
