@@ -1,8 +1,6 @@
-use crate::{Context, ErrorCode, MarketMiddleware};
+use crate::{Context, ErrorCode, MarketMiddleware, ID};
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program;
-use anchor_lang::solana_program::pubkey::Pubkey;
-use anchor_spl::dex;
+use anchor_lang::solana_program::{program, pubkey::Pubkey};
 use serum_dex::instruction::*;
 
 /// MarketProxy provides an abstraction for implementing proxy programs to the
@@ -38,12 +36,12 @@ impl<'a> MarketProxy<'a> {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         data: &[u8],
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let mut ix_data = data;
 
         // First account is the Serum DEX executable--used for CPI.
         let dex = &accounts[0];
-        require!(dex.key == &dex::ID, ErrorCode::InvalidTargetProgram);
+        require!(dex.key == &ID, ErrorCode::InvalidTargetProgram);
         let acc_infos = (accounts[1..]).to_vec();
 
         // Process the instruction data.
@@ -170,7 +168,7 @@ impl<'a> MarketProxy<'a> {
             let ix = anchor_lang::solana_program::instruction::Instruction {
                 data: ix_data.to_vec(),
                 accounts: dex_accounts,
-                program_id: dex::ID,
+                program_id: ID,
             };
             program::invoke_signed(&ix, &accounts, &signers)?;
         }

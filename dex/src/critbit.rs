@@ -173,6 +173,7 @@ enum NodeRef<'a> {
     Leaf(&'a LeafNode),
 }
 
+#[allow(dead_code)]
 enum NodeRefMut<'a> {
     Inner(&'a mut InnerNode),
     Leaf(&'a mut LeafNode),
@@ -887,10 +888,10 @@ mod tests {
             assert_eq!(slab.find_max(), None);
 
             for i in 0..100 {
-                let offset = rng.gen();
-                let key = rng.gen();
-                let owner = rng.gen();
-                let qty = rng.gen();
+                let offset = rng.random();
+                let key = rng.random();
+                let owner = rng.random();
+                let qty = rng.random();
                 let leaf = LeafNode::new(offset, key, owner, qty, FeeTier::Base, 0);
 
                 println!("{:x}", key);
@@ -902,7 +903,7 @@ mod tests {
 
                 // test find_by_key
                 let valid_search_key = *all_keys.choose(&mut rng).unwrap();
-                let invalid_search_key = rng.gen();
+                let invalid_search_key = rng.random();
 
                 for &search_key in &[valid_search_key, invalid_search_key] {
                     let slab_value = slab
@@ -929,7 +930,7 @@ mod tests {
 
     #[test]
     fn simulate_operations() {
-        use rand::distributions::WeightedIndex;
+        use rand::distr::weighted::WeightedIndex;
         use std::collections::BTreeMap;
 
         let mut aligned_buf = vec![0u64; 1_250_000];
@@ -978,14 +979,14 @@ mod tests {
 
                 match weights[dist.sample(&mut rng)].0 {
                     op @ Op::InsertNew | op @ Op::InsertDup => {
-                        let offset = rng.gen();
+                        let offset = rng.random();
                         let key = match op {
-                            Op::InsertNew => rng.gen(),
+                            Op::InsertNew => rng.random(),
                             Op::InsertDup => *all_keys.choose(&mut rng).unwrap(),
                             _ => unreachable!(),
                         };
-                        let owner = rng.gen();
-                        let qty = rng.gen();
+                        let owner = rng.random();
+                        let qty = rng.random();
                         let leaf = LeafNode::new(offset, key, owner, qty, FeeTier::Base, 5);
 
                         println!("Insert {:x}", key);
@@ -1002,7 +1003,7 @@ mod tests {
                         let key = all_keys
                             .choose(&mut rng)
                             .map(|x| *x)
-                            .unwrap_or_else(|| rng.gen());
+                            .unwrap_or_else(|| rng.random());
 
                         println!("Remove {:x}", key);
 

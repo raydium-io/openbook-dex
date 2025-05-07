@@ -4,7 +4,7 @@ version = "0.5.1"
 edition = "2018"
 
 [dependencies]
-anchor-lang = "0.18.2"
-anchor-spl = { version = "0.18.2", features = ["dex"] }
+anchor-lang = "0.31.0"
+anchor-spl = { version = "0.31.0", features = ["token"] }
 serum_dex = { path = "../", features = ["no-entrypoint"] }
-spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
+spl-token = { version = "=7.0.0", default-features = false, features = ["no-entrypoint"] }

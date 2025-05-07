@@ -1,3 +1,4 @@
+#![allow(warnings)]
 #![cfg_attr(not(feature = "program"), allow(unused))]
 use crate::error::DexError;
 use crate::matching::{OrderType, Side};

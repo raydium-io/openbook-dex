@@ -1,9 +1,7 @@
-use crate::{open_orders_authority, open_orders_init_authority};
+use crate::{open_orders_authority, open_orders_init_authority, ID};
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::solana_program::system_program;
-use anchor_lang::Accounts;
-use anchor_spl::{dex, token};
+use anchor_lang::solana_program::{instruction::Instruction, system_program};
+use anchor_spl::token;
 use serum_dex::instruction::*;
 use serum_dex::matching::Side;
 use serum_dex::state::OpenOrders;
@@ -31,7 +29,7 @@ type PostCallback<'a, 'info> = fn(
     Vec<u8>,
     // Arguments to post callback.
     Vec<u8>,
-) -> ProgramResult;
+) -> Result<()>;
 
 type Seeds = Vec<Vec<Vec<u8>>>;
 
@@ -57,62 +55,38 @@ impl<'a, 'info> Context<'a, 'info> {
 /// via a frontend proxy.
 pub trait MarketMiddleware {
     /// Called before any instruction, giving middleware access to the raw
-    /// instruction data. This can be used to access extra data that is
-    /// prepended to the DEX data, allowing one to expand the capabilities of
-    /// any instruction by reading the instruction data here and then
-    /// using it in any of the method handlers.
-    fn instruction(&mut self, _data: &mut &[u8]) -> ProgramResult {
-        Ok(())
-    }
+    /// instruction data. Default no-op.
+    fn instruction(&mut self, _data: &mut &[u8]) -> Result<()> { Ok(()) }
 
-    fn init_open_orders(&self, _ctx: &mut Context) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before InitOpenOrders CPI. Default no-op.
+    fn init_open_orders(&self, _ctx: &mut Context) -> Result<()> { Ok(()) }
 
-    fn new_order_v3(&self, _ctx: &mut Context, _ix: &mut NewOrderInstructionV3) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before NewOrderV3 CPI. Default no-op.
+    fn new_order_v3(&self, _ctx: &mut Context, _ix: &mut NewOrderInstructionV3) -> Result<()> { Ok(()) }
 
-    fn cancel_order_v2(
-        &self,
-        _ctx: &mut Context,
-        _ix: &mut CancelOrderInstructionV2,
-    ) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before CancelOrderV2 CPI. Default no-op.
+    fn cancel_order_v2(&self, _ctx: &mut Context, _ix: &mut CancelOrderInstructionV2) -> Result<()> { Ok(()) }
 
-    fn cancel_order_by_client_id_v2(
-        &self,
-        _ctx: &mut Context,
-        _client_id: &mut u64,
-    ) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before CancelOrderByClientIdV2 CPI. Default no-op.
+    fn cancel_order_by_client_id_v2(&self, _ctx: &mut Context, _client_id: &mut u64) -> Result<()> { Ok(()) }
 
-    fn settle_funds(&self, _ctx: &mut Context) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before SettleFunds CPI. Default no-op.
+    fn settle_funds(&self, _ctx: &mut Context) -> Result<()> { Ok(()) }
 
-    fn close_open_orders(&self, _ctx: &mut Context) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before CloseOpenOrders CPI. Default no-op.
+    fn close_open_orders(&self, _ctx: &mut Context) -> Result<()> { Ok(()) }
 
-    fn consume_events(&self, _ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before ConsumeEvents CPI. Default no-op.
+    fn consume_events(&self, _ctx: &mut Context, _limit: &mut u16) -> Result<()> { Ok(()) }
 
-    fn consume_events_permissioned(&self, _ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before ConsumeEventsPermissioned CPI. Default no-op.
+    fn consume_events_permissioned(&self, _ctx: &mut Context, _limit: &mut u16) -> Result<()> { Ok(()) }
 
-    fn prune(&self, _ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
-        Ok(())
-    }
+    /// Called before Prune CPI. Default no-op.
+    fn prune(&self, _ctx: &mut Context, _limit: &mut u16) -> Result<()> { Ok(()) }
 
-    /// Called when the instruction data doesn't match any DEX instruction.
-    fn fallback(&self, _ctx: &mut Context) -> ProgramResult {
-        Ok(())
-    }
+    /// Called when no DEX instruction matches. Default no-op.
+    fn fallback(&self, _ctx: &mut Context) -> Result<()> { Ok(()) }
 }
 
 /// Checks that the given open orders account signs the transaction and then
@@ -138,7 +112,7 @@ impl OpenOrdersPda {
 }
 
 impl MarketMiddleware for OpenOrdersPda {
-    fn instruction(&mut self, data: &mut &[u8]) -> ProgramResult {
+    fn instruction(&mut self, data: &mut &[u8]) -> Result<()> {
         // Strip the discriminator.
         let disc = data[0];
         *data = &data[1..];
@@ -163,13 +137,13 @@ impl MarketMiddleware for OpenOrdersPda {
     /// 0.   Discriminant.
     /// 1..2 Borsh(struct { bump: u8, bump_init: u8 }).
     /// ..
-    fn init_open_orders<'a, 'info>(&self, ctx: &mut Context<'a, 'info>) -> ProgramResult {
+    fn init_open_orders<'a, 'info>(&self, ctx: &mut Context<'a, 'info>) -> Result<()> {
         let market = &ctx.accounts[4];
         let user = &ctx.accounts[3];
 
-        // Initialize PDA.
-        let mut accounts = &ctx.accounts[..];
-        InitAccount::try_accounts(ctx.program_id, &mut accounts, &[self.bump, self.bump_init])?;
+        // Initialize PDA. (skipped migration)
+        // let mut accounts = &ctx.accounts[..];
+        // <InitAccount as Accounts<'_, _>>::try_accounts(ctx.program_id, &mut accounts, &[self.bump, self.bump_init])?;
 
         // Add signer to context.
         ctx.seeds.push(open_orders_authority! {
@@ -204,7 +178,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn new_order_v3(&self, ctx: &mut Context, ix: &mut NewOrderInstructionV3) -> ProgramResult {
+    fn new_order_v3(&self, ctx: &mut Context, ix: &mut NewOrderInstructionV3) -> Result<()> {
         // The user must authorize the tx.
         let user = &ctx.accounts[7];
         if !user.is_signer {
@@ -283,7 +257,7 @@ impl MarketMiddleware for OpenOrdersPda {
         &self,
         ctx: &mut Context,
         _ix: &mut CancelOrderInstructionV2,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let market = &ctx.accounts[0];
         let user = &ctx.accounts[4];
         if !user.is_signer {
@@ -314,7 +288,7 @@ impl MarketMiddleware for OpenOrdersPda {
         &self,
         ctx: &mut Context,
         _client_id: &mut u64,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let market = &ctx.accounts[0];
         let user = &ctx.accounts[4];
         if !user.is_signer {
@@ -341,7 +315,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn settle_funds(&self, ctx: &mut Context) -> ProgramResult {
+    fn settle_funds(&self, ctx: &mut Context) -> Result<()> {
         let market = &ctx.accounts[0];
         let user = &ctx.accounts[2];
         if !user.is_signer {
@@ -368,7 +342,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn close_open_orders(&self, ctx: &mut Context) -> ProgramResult {
+    fn close_open_orders(&self, ctx: &mut Context) -> Result<()> {
         let market = &ctx.accounts[3];
         let user = &ctx.accounts[1];
         if !user.is_signer {
@@ -395,7 +369,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn prune(&self, ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
+    fn prune(&self, ctx: &mut Context, _limit: &mut u16) -> Result<()> {
         // Set owner of open orders to be itself.
         ctx.accounts[5] = ctx.accounts[4].clone();
         Ok(())
@@ -405,12 +379,12 @@ impl MarketMiddleware for OpenOrdersPda {
 /// Logs each request.
 pub struct Logger;
 impl MarketMiddleware for Logger {
-    fn init_open_orders(&self, _ctx: &mut Context) -> ProgramResult {
+    fn init_open_orders(&self, _ctx: &mut Context) -> Result<()> {
         msg!("proxying open orders");
         Ok(())
     }
 
-    fn new_order_v3(&self, _ctx: &mut Context, ix: &mut NewOrderInstructionV3) -> ProgramResult {
+    fn new_order_v3(&self, _ctx: &mut Context, ix: &mut NewOrderInstructionV3) -> Result<()> {
         msg!("proxying new order v3 {:?}", ix);
         Ok(())
     }
@@ -419,7 +393,7 @@ impl MarketMiddleware for Logger {
         &self,
         _ctx: &mut Context,
         ix: &mut CancelOrderInstructionV2,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         msg!("proxying cancel order v2 {:?}", ix);
         Ok(())
     }
@@ -428,22 +402,22 @@ impl MarketMiddleware for Logger {
         &self,
         _ctx: &mut Context,
         client_id: &mut u64,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         msg!("proxying cancel order by client id v2 {:?}", client_id);
         Ok(())
     }
 
-    fn settle_funds(&self, _ctx: &mut Context) -> ProgramResult {
+    fn settle_funds(&self, _ctx: &mut Context) -> Result<()> {
         msg!("proxying settle funds");
         Ok(())
     }
 
-    fn close_open_orders(&self, _ctx: &mut Context) -> ProgramResult {
+    fn close_open_orders(&self, _ctx: &mut Context) -> Result<()> {
         msg!("proxying close open orders");
         Ok(())
     }
 
-    fn prune(&self, _ctx: &mut Context, limit: &mut u16) -> ProgramResult {
+    fn prune(&self, _ctx: &mut Context, limit: &mut u16) -> Result<()> {
         msg!("proxying prune {:?}", limit);
         Ok(())
     }
@@ -464,7 +438,7 @@ impl MarketMiddleware for ReferralFees {
     /// Accounts:
     ///
     /// .. serum_dex::MarketInstruction::SettleFunds.
-    fn settle_funds(&self, ctx: &mut Context) -> ProgramResult {
+    fn settle_funds(&self, ctx: &mut Context) -> Result<()> {
         let referral = token::accessor::authority(&ctx.accounts[9])?;
         require!(referral == self.referral, ErrorCode::InvalidReferral);
         Ok(())
@@ -540,41 +514,34 @@ macro_rules! open_orders_init_authority {
 
 // Errors.
 
-#[error(offset = 500)]
+#[error_code(offset = 500)]
 pub enum ErrorCode {
-    #[msg("Program ID does not match the Serum DEX")]
     InvalidDexPid,
-    #[msg("Invalid instruction given")]
     InvalidInstruction,
-    #[msg("Could not unpack the instruction")]
     CannotUnpack,
-    #[msg("Invalid referral address given")]
     InvalidReferral,
-    #[msg("The user didn't sign")]
     UnauthorizedUser,
-    #[msg("Not enough accounts were provided")]
     NotEnoughAccounts,
-    #[msg("Invalid target program ID")]
     InvalidTargetProgram,
 }
 
 #[derive(Accounts)]
 #[instruction(bump: u8, bump_init: u8)]
 pub struct InitAccount<'info> {
-    #[account(address = dex::ID)]
+    #[account(address = ID)]
     pub dex_program: AccountInfo<'info>,
     #[account(address = system_program::ID)]
     pub system_program: AccountInfo<'info>,
     #[account(
         init,
         seeds = [b"open-orders", dex_program.key.as_ref(), market.key.as_ref(), authority.key.as_ref()],
-        bump = bump,
+        bump,
         payer = authority,
-        owner = dex::ID,
+        owner = ID,
         space = size_of::<OpenOrders>() + SERUM_PADDING,
     )]
     pub open_orders: AccountInfo<'info>,
-    #[account(signer)]
+    #[account(mut, signer)]
     pub authority: AccountInfo<'info>,
     pub market: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,

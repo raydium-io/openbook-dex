@@ -4,6 +4,7 @@ members = [
     "common",
     "dex/crank",
     "dex/permissioned",
+    "dex/fuzz",
 ]
 exclude = [
     "dex",

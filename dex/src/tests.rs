@@ -1,4 +1,5 @@
 use std::convert::identity;
+use std::convert::TryInto;
 use std::mem::size_of;
 use std::num::NonZeroU64;
 
@@ -20,14 +21,17 @@ use instruction::{initialize_market, MarketInstruction, NewOrderInstructionV3, S
 use matching::{OrderType, Side};
 use state::gen_vault_signer_key;
 use state::{Market, MarketState, OpenOrders, State, ToAlignedBytes};
-
 use crate::error::DexErrorCode;
-use crate::state::account_parser::CancelOrderByClientIdV2Args;
+// use crate::state::account_parser::CancelOrderByClientIdV2Args; // removed unused import
 
 use super::*;
 
 fn random_pubkey<'bump, G: rand::Rng>(_rng: &mut G, bump: &'bump Bump) -> &'bump Pubkey {
-    bump.alloc(Pubkey::new(transmute_to_bytes(&rand::random::<[u64; 4]>())))
+    bump.alloc(Pubkey::new_from_array(
+        transmute_to_bytes(&rand::random::<[u64; 4]>() )
+            .try_into()
+            .unwrap(),
+    ))
 }
 
 struct MarketAccounts<'bump> {

@@ -1,4 +1,5 @@
 #![deny(unaligned_references)]
+use std::convert::TryInto;
 use std::mem::size_of;
 
 use bumpalo::Bump;
@@ -25,7 +26,7 @@ use serum_dex::state::{
 };
 
 fn random_pubkey(bump: &Bump) -> &Pubkey {
-    bump.alloc(Pubkey::new(transmute_to_bytes(&rand::random::<[u64; 4]>())))
+    bump.alloc(Pubkey::new_from_array(transmute_to_bytes(&rand::random::<[u64; 4]>()).try_into().unwrap()))
 }
 
 fn allocate_dex_owned_account(unpadded_size: usize, bump: &Bump) -> &mut [u8] {
@@ -217,7 +218,7 @@ pub const PC_DUST_THRESHOLD: u64 = 500;
 
 pub fn setup_market(bump: &Bump, is_permissioned: bool) -> MarketAccounts {
     let rent = Rent::default();
-    let rent_sysvar = new_rent_sysvar_account(100000, rent, bump);
+    let rent_sysvar = new_rent_sysvar_account(100000, rent.clone(), bump);
 
     let program_id = random_pubkey(bump);
     let market = new_dex_owned_account(
@@ -228,21 +229,21 @@ pub fn setup_market(bump: &Bump, is_permissioned: bool) -> MarketAccounts {
         },
         program_id,
         bump,
-        rent,
+        rent.clone(),
     );
-    let bids = new_dex_owned_account(1 << 16, program_id, bump, rent);
-    let asks = new_dex_owned_account(1 << 16, program_id, bump, rent);
-    let req_q = new_dex_owned_account(640, program_id, bump, rent);
-    let event_q = new_dex_owned_account(65536, program_id, bump, rent);
+    let bids = new_dex_owned_account(1 << 16, program_id, bump, rent.clone());
+    let asks = new_dex_owned_account(1 << 16, program_id, bump, rent.clone());
+    let req_q = new_dex_owned_account(640, program_id, bump, rent.clone());
+    let event_q = new_dex_owned_account(65536, program_id, bump, rent.clone());
 
-    let coin_mint = new_token_mint(bump, rent);
-    let pc_mint = new_token_mint(bump, rent);
+    let coin_mint = new_token_mint(bump, rent.clone());
+    let pc_mint = new_token_mint(bump, rent.clone());
 
     let (vault_signer_nonce, vault_signer) = new_vault_signer_account(&market, program_id, bump);
 
-    let coin_vault = new_token_account(coin_mint.key, vault_signer.key, 0, bump, rent);
-    let pc_vault = new_token_account(pc_mint.key, vault_signer.key, 0, bump, rent);
-    let fee_receiver = new_token_account(pc_mint.key, random_pubkey(bump), 0, bump, rent);
+    let coin_vault = new_token_account(coin_mint.key, vault_signer.key, 0, bump, rent.clone());
+    let pc_vault = new_token_account(pc_mint.key, vault_signer.key, 0, bump, rent.clone());
+    let fee_receiver = new_token_account(pc_mint.key, random_pubkey(bump), 0, bump, rent.clone());
     let sweep_authority = new_sol_account_with_pubkey(bump.alloc(fee_sweeper::ID), 0, bump);
 
     let (open_orders_authority, prune_authority) = match is_permissioned {
