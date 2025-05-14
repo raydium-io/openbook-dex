@@ -38,7 +38,7 @@ use crate::{
     matching::{OrderBookState, OrderType, RequestProceeds, Side},
 };
 
-use anchor_lang::prelude::{borsh, emit, event, AnchorDeserialize, AnchorSerialize};
+use anchor_lang::{Discriminator, prelude::{borsh, emit, event, AnchorDeserialize, AnchorSerialize}};
 
 declare_check_assert_macros!(SourceFileId::State);
 
@@ -737,7 +737,7 @@ impl MarketState {
     }
 
     fn pubkey(&self) -> Pubkey {
-        Pubkey::new(cast_slice(&identity(self.own_address) as &[_]))
+        Pubkey::try_from_slice(cast_slice(&identity(self.own_address) as &[_])).unwrap()
     }
 }
 
@@ -3243,9 +3243,9 @@ impl State {
                         );
                     }
 
-                    let open_orders_pk = Pubkey::new(cast_slice(&identity(owner) as &[_]));
+                    let open_orders_pk = Pubkey::try_from_slice(cast_slice(&identity(owner) as &[_])).unwrap();
                     let open_orders_owner_pk =
-                        Pubkey::new(cast_slice(&identity(open_orders.owner) as &[_]));
+                        Pubkey::try_from_slice(cast_slice(&identity(open_orders.owner) as &[_])).unwrap();
                     emit!(FillEventLog {
                         market: market.pubkey(),
                         bid: match side {
