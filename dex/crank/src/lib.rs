@@ -11,6 +11,7 @@ use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use std::{thread, time};
+use std::convert::TryInto;
 
 use anyhow::{format_err, Result};
 use clap::Parser;
@@ -34,7 +35,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::transaction::Transaction;
-use spl_token::instruction as token_instruction;
+use spl_token::instruction as spl_token_instruction;
 use warp::Filter;
 
 use serum_common::client::rpc::{
@@ -55,6 +56,9 @@ use serum_dex::state::QueueHeader;
 use serum_dex::state::Request;
 use serum_dex::state::RequestQueueHeader;
 use serum_dex::state::{AccountFlag, Market, MarketState, MarketStateV2};
+
+// Include local token_instruction module
+mod token_instruction;
 
 pub fn with_logging<F: FnOnce()>(_to: &str, fnc: F) {
     fnc();
@@ -449,24 +453,36 @@ fn get_keys_for_market<'a>(
     );
     Ok(MarketPubkeys {
         market: Box::new(*market),
-        req_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.req_q,
-        )))),
-        event_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.event_q,
-        )))),
-        bids: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.bids,
-        )))),
-        asks: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.asks,
-        )))),
-        coin_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.coin_vault,
-        )))),
-        pc_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.pc_vault,
-        )))),
+        req_q: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.req_q))
+                .try_into()
+                .unwrap(),
+        )),
+        event_q: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.event_q))
+                .try_into()
+                .unwrap(),
+        )),
+        bids: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.bids))
+                .try_into()
+                .unwrap(),
+        )),
+        asks: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.asks))
+                .try_into()
+                .unwrap(),
+        )),
+        coin_vault: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.coin_vault))
+                .try_into()
+                .unwrap(),
+        )),
+        pc_vault: Box::new(Pubkey::new_from_array(
+            transmute_one_to_bytes(&identity(market_state.pc_vault))
+                .try_into()
+                .unwrap(),
+        )),
         vault_signer_key: Box::new(vault_signer_key),
     })
 }
@@ -618,7 +634,11 @@ fn consume_events_loop(
 
             let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
             for pubkey_words in orders_accounts {
-                let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+                let pubkey = Pubkey::new_from_array(
+                    transmute_to_bytes(&pubkey_words)
+                        .try_into()
+                        .unwrap(),
+                );
                 account_metas.push(AccountMeta::new(pubkey, false));
             }
             for pubkey in [
@@ -803,7 +823,11 @@ pub fn consume_events_instruction(
 
     let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
     for pubkey_words in orders_accounts {
-        let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+        let pubkey = Pubkey::new_from_array(
+            transmute_to_bytes(&pubkey_words)
+                .try_into()
+                .unwrap(),
+        );
         account_metas.push(AccountMeta::new(pubkey, false));
     }
     for pubkey in [&state.market, &state.event_q, coin_wallet, pc_wallet].iter() {
@@ -1482,7 +1506,7 @@ fn create_account(
         &spl_token::ID,
     );
 
-    let init_account_instr = token_instruction::initialize_account(
+    let init_account_instr = spl_token_instruction::initialize_account(
         &spl_token::ID,
         &spl_account.pubkey(),
         mint_pubkey,
@@ -1515,7 +1539,7 @@ fn mint_to_existing_account(
 ) -> Result<()> {
     let signers = vec![payer, minting_key];
 
-    let mint_tokens_instr = token_instruction::mint_to(
+    let mint_tokens_instr = spl_token_instruction::mint_to(
         &spl_token::ID,
         mint,
         recipient,
@@ -1546,7 +1570,7 @@ fn initialize_token_account(client: &RpcClient, mint: &Pubkey, owner: &Keypair) 
         spl_token::state::Account::LEN as u64,
         &spl_token::ID,
     );
-    let init_recip_instr = token_instruction::initialize_account(
+    let init_recip_instr = spl_token_instruction::initialize_account(
         &spl_token::ID,
         &recip_keypair.pubkey(),
         mint,
