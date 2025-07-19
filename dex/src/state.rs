@@ -1,4 +1,6 @@
 #![cfg_attr(not(feature = "program"), allow(unused))]
+#![allow(clippy::too_many_arguments)]
+
 use num_enum::TryFromPrimitive;
 use std::{
     cell::{Ref, RefMut},
@@ -20,7 +22,7 @@ use enumflags2::BitFlags;
 use num_traits::FromPrimitive;
 use safe_transmute::{self, to_bytes::transmute_to_bytes, trivial::TriviallyTransmutable};
 
-use solana_program::{
+use anchor_lang::solana_program::{
     account_info::AccountInfo, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
     rent::Rent, sysvar::Sysvar,
 };
@@ -1605,19 +1607,19 @@ pub fn gen_vault_signer_key(
 
 #[cfg(not(any(test, feature = "fuzz")))]
 fn invoke_spl_token(
-    instruction: &solana_program::instruction::Instruction,
+    instruction: &anchor_lang::solana_program::instruction::Instruction,
     account_infos: &[AccountInfo],
     signers_seeds: &[&[&[u8]]],
-) -> solana_program::entrypoint::ProgramResult {
-    solana_program::program::invoke_signed(instruction, account_infos, signers_seeds)
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    anchor_lang::solana_program::program::invoke_signed(instruction, account_infos, signers_seeds)
 }
 
 #[cfg(any(test, feature = "fuzz"))]
 fn invoke_spl_token(
-    instruction: &solana_program::instruction::Instruction,
+    instruction: &anchor_lang::solana_program::instruction::Instruction,
     account_infos: &[AccountInfo],
     _signers_seeds: &[&[&[u8]]],
-) -> solana_program::entrypoint::ProgramResult {
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
     assert_eq!(instruction.program_id, spl_token::ID);
     let account_infos: Vec<AccountInfo> = instruction
         .accounts
@@ -2630,13 +2632,13 @@ pub(crate) mod account_parser {
                 return Err(DexErrorCode::TooManyOpenOrders.into());
             }
             if open_orders.native_coin_total != 0 {
-                solana_program::msg!(
+                anchor_lang::solana_program::msg!(
                     "Base currency total must be zero to close the open orders account"
                 );
                 return Err(DexErrorCode::TooManyOpenOrders.into());
             }
             if open_orders.native_pc_total != 0 {
-                solana_program::msg!(
+                anchor_lang::solana_program::msg!(
                     "Quote currency total must be zero to close the open orders account"
                 );
                 return Err(DexErrorCode::TooManyOpenOrders.into());
@@ -2924,7 +2926,7 @@ impl State {
         let (bids_removed, asks_removed) =
             order_book_state.remove_all(open_orders_addr_bytes, limit)?;
 
-        solana_program::msg!(
+        anchor_lang::solana_program::msg!(
             "Pruned {:?} bids and {:?} asks",
             bids_removed.len(),
             asks_removed.len()
@@ -3475,7 +3477,7 @@ impl State {
         // which would cause an error (as there would be two borrows while
         // one of them is mutable).
 
-        use solana_program::clock::Clock;
+        use anchor_lang::solana_program::clock::Clock;
 
         drop(open_orders);
 

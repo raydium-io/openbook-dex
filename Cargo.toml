@@ -4,7 +4,11 @@ members = [
     "common",
     "dex/crank",
     "dex/permissioned",
+    "dex/fuzz",
 ]
 exclude = [
     "dex",
 ]
+
+[profile.release]
+overflow-checks = true

@@ -8,7 +8,6 @@ use serum_dex_permissioned::{
     Context, Logger, MarketMiddleware, MarketProxy, OpenOrdersPda, ReferralFees,
 };
 use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::rent;
 
@@ -58,7 +57,7 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 #[program]
 pub mod permissioned_markets {
     use super::*;
-    pub fn entry(program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8]) -> ProgramResult {
+    pub fn entry(program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         MarketProxy::new()
             .middleware(&mut Logger)
             .middleware(&mut Identity)
@@ -85,7 +84,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token.
     /// ..
-    fn init_open_orders(&self, ctx: &mut Context) -> ProgramResult {
+    fn init_open_orders(&self, ctx: &mut Context) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -93,7 +92,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token.
     /// ..
-    fn new_order_v3(&self, ctx: &mut Context, _ix: &mut NewOrderInstructionV3) -> ProgramResult {
+    fn new_order_v3(&self, ctx: &mut Context, _ix: &mut NewOrderInstructionV3) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -105,7 +104,7 @@ impl MarketMiddleware for Identity {
         &self,
         ctx: &mut Context,
         _ix: &mut CancelOrderInstructionV2,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -117,7 +116,7 @@ impl MarketMiddleware for Identity {
         &self,
         ctx: &mut Context,
         _client_id: &mut u64,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -125,7 +124,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token.
     /// ..
-    fn settle_funds(&self, ctx: &mut Context) -> ProgramResult {
+    fn settle_funds(&self, ctx: &mut Context) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -133,7 +132,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token.
     /// ..
-    fn close_open_orders(&self, ctx: &mut Context) -> ProgramResult {
+    fn close_open_orders(&self, ctx: &mut Context) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 
@@ -141,7 +140,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token (revoked).
     /// ..
-    fn prune(&self, ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
+    fn prune(&self, ctx: &mut Context, _limit: &mut u16) -> Result<()> {
         verify_revoked_and_strip_auth(ctx)?;
 
         // Sign with the prune authority.
@@ -160,7 +159,7 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token (revoked).
     /// ..
-    fn consume_events_permissioned(&self, ctx: &mut Context, _limit: &mut u16) -> ProgramResult {
+    fn consume_events_permissioned(&self, ctx: &mut Context, _limit: &mut u16) -> Result<()> {
         verify_revoked_and_strip_auth(ctx)?;
 
         let market_idx = ctx.accounts.len() - 3;
@@ -182,17 +181,19 @@ impl MarketMiddleware for Identity {
     ///
     /// 0. Authorization token.
     /// ..
-    fn fallback(&self, ctx: &mut Context) -> ProgramResult {
+    fn fallback(&self, ctx: &mut Context) -> Result<()> {
         verify_and_strip_auth(ctx)
     }
 }
 
 // Utils.
 
-fn verify_and_strip_auth(ctx: &mut Context) -> ProgramResult {
+fn verify_and_strip_auth(ctx: &mut Context) -> Result<()> {
     // The rent sysvar is used as a dummy example of an identity token.
     let auth = &ctx.accounts[0];
-    require!(auth.key == &rent::ID, InvalidAuth);
+    if auth.key != &rent::ID {
+        return Err(ErrorCode::InvalidAuth.into());
+    }
 
     // Strip off the account before possing on the message.
     ctx.accounts = (&ctx.accounts[1..]).to_vec();
@@ -200,10 +201,12 @@ fn verify_and_strip_auth(ctx: &mut Context) -> ProgramResult {
     Ok(())
 }
 
-fn verify_revoked_and_strip_auth(ctx: &mut Context) -> ProgramResult {
+fn verify_revoked_and_strip_auth(ctx: &mut Context) -> Result<()> {
     // The rent sysvar is used as a dummy example of an identity token.
     let auth = &ctx.accounts[0];
-    require!(auth.key != &rent::ID, TokenNotRevoked);
+    if auth.key == &rent::ID {
+        return Err(ErrorCode::TokenNotRevoked.into());
+    }
 
     // Strip off the account before possing on the message.
     ctx.accounts = (&ctx.accounts[1..]).to_vec();
@@ -266,7 +269,7 @@ macro_rules! consume_events_authority {
 
 // Error.
 
-#[error]
+#[error_code]
 pub enum ErrorCode {
     #[msg("Invalid auth token provided")]
     InvalidAuth,

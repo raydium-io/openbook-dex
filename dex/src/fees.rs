@@ -1,5 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use solana_program::pubkey::Pubkey;
+use anchor_lang::solana_program::pubkey::Pubkey;
 use std::convert::TryInto;
 
 #[cfg(test)]
@@ -7,7 +7,7 @@ use proptest_derive::Arbitrary;
 
 mod stable_markets {
     pub mod usdt_usdc {
-        solana_program::declare_id!("B2na8Awyd7cpC59iEU43FagJAPLigr3AP3s38KM982bu");
+        anchor_lang::declare_id!("B2na8Awyd7cpC59iEU43FagJAPLigr3AP3s38KM982bu");
     }
 }
 

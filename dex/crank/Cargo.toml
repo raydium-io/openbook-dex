@@ -10,11 +10,12 @@ path = "src/bin/main.rs"
 [dependencies]
 serum_dex = { path = "../", default-features = false, features = ["client", "program"] }
 serum-common = { path = "../../common", features = ["client"] }
-spl-token = { version = "3.5.0", features = ["no-entrypoint"], default-features = false }
+spl-token = { version = "=8.0.0", features = ["no-entrypoint"], default-features = false }
+spl-associated-token-account = { version = "7.0.0", features = ["no-entrypoint"] }
 clap = { version = "4.0.29", features = ["derive"] }
 enumflags2 = "0.6.4"
-solana-client = "1.10.41"
-solana-sdk = "1.10.41"
+solana-client = "2.3.0"
+solana-sdk = "2.3.0"
 anyhow = "1.0.66"
 rand = "0.7.3"
 safe-transmute = "0.11.2"

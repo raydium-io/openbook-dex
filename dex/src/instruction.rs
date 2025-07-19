@@ -1,9 +1,10 @@
 #![cfg_attr(not(feature = "program"), allow(unused))]
+#![allow(clippy::too_many_arguments)]
 use crate::error::DexError;
 use crate::matching::{OrderType, Side};
 use bytemuck::cast;
 use serde::{Deserialize, Serialize};
-use solana_program::{
+use anchor_lang::solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     sysvar::rent,
@@ -20,22 +21,22 @@ use proptest::prelude::*;
 use proptest_derive::Arbitrary;
 
 pub mod srm_token {
-    use solana_program::declare_id;
+    use anchor_lang::declare_id;
     declare_id!("SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt");
 }
 
 pub mod msrm_token {
-    use solana_program::declare_id;
+    use anchor_lang::declare_id;
     declare_id!("MSRMcoVyrFxnSgo5uXwone5SKcGhT1KEJMFEkMEWf9L");
 }
 
 pub mod disable_authority {
-    use solana_program::declare_id;
+    use anchor_lang::declare_id;
     declare_id!("GTgd6NaobHDLSFAh2kG5DTNsL4SBJH42Qq11jpjWCfXA");
 }
 
 pub mod fee_sweeper {
-    use solana_program::declare_id;
+    use anchor_lang::declare_id;
     declare_id!("GTgd6NaobHDLSFAh2kG5DTNsL4SBJH42Qq11jpjWCfXA");
 }
 
@@ -681,7 +682,7 @@ pub fn initialize_market(
     pc_lot_size: u64,
     vault_signer_nonce: u64,
     pc_dust_threshold: u64,
-) -> Result<solana_program::instruction::Instruction, DexError> {
+) -> Result<anchor_lang::solana_program::instruction::Instruction, DexError> {
     let data = MarketInstruction::InitializeMarket(InitializeMarketInstruction {
         coin_lot_size,
         pc_lot_size,
@@ -704,7 +705,7 @@ pub fn initialize_market(
     let coin_mint = AccountMeta::new_readonly(*coin_mint_pk, false);
     let pc_mint = AccountMeta::new_readonly(*pc_mint_pk, false);
 
-    let rent_sysvar = AccountMeta::new_readonly(solana_program::sysvar::rent::ID, false);
+    let rent_sysvar = AccountMeta::new_readonly(anchor_lang::solana_program::sysvar::rent::ID, false);
 
     let mut accounts = vec![
         market_account,

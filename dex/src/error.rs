@@ -1,5 +1,5 @@
 use num_enum::{FromPrimitive, IntoPrimitive};
-use solana_program::program_error::ProgramError;
+use anchor_lang::solana_program::program_error::ProgramError;
 use thiserror::Error;
 
 pub type DexResult<T = ()> = Result<T, DexError>;

@@ -1,5 +1,8 @@
 anchor_version = "0.31.0"
 
+[toolchain]
+anchor_version = "0.31.0"
+
 [workspace]
 members = [
     ".",
